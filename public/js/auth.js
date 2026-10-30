@@ -3,14 +3,14 @@ const Auth = {
   user: null,
 
   init: () => new Promise((resolve) => {
-    const F = window.FirebaseContext;
-    if (!F) {
-      Auth.showSetupRequired();
-      resolve(null);
-      return;
-    }
-
-    F.onAuthStateChanged(F.auth, async (user) => {
+    let started = false;
+    let timeoutId;
+    const startListener = () => {
+      if (started || !window.FirebaseContext) return;
+      started = true;
+      window.clearTimeout(timeoutId);
+      const F = window.FirebaseContext;
+      F.onAuthStateChanged(F.auth, async (user) => {
       Auth.user = user;
       if (!user) {
         Auth.profile = null;
@@ -38,7 +38,19 @@ const Auth = {
         Auth.setMessage(error.message, 'danger');
         resolve(null);
       }
-    });
+      });
+    };
+
+    if (window.FirebaseContext) {
+      startListener();
+    } else {
+      window.addEventListener('firebase-ready', startListener, { once: true });
+      timeoutId = window.setTimeout(() => {
+        if (started) return;
+        Auth.showSetupRequired();
+        resolve(null);
+      }, 8000);
+    }
   }),
 
   login: async (event) => {
