@@ -15,7 +15,8 @@
     "deploy": "npm run build && firebase deploy --only hosting,firestore:rules,firestore:indexes",
     "deploy:hosting": "firebase deploy --only hosting",
     "seed": "node scripts/seed-firestore.js",
-    "provision:user": "node scripts/provision-user.js"
+    "provision:user": "node scripts/provision-user.js",
+    "change:user-email": "node scripts/change-user-email.js"
   },
   "keywords": [
     "hrms",

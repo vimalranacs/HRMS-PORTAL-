@@ -69,6 +69,18 @@ npm run provision:user -- --uid=EMPLOYEE_2_UID --email=rohan.verma@example.com -
 
 The script links UID to employee and updates existing payroll ownership. Ordinary client SDK code never creates privileged users.
 
+Each person needs a separate Firebase Authentication account. Both roles use the same sign-in page; the protected `users/{uid}` profile determines their permissions. For a new HR manager, create an Authentication user in the Firebase Console, copy its UID, then run `npm run provision:user -- --uid=HR_UID --name="HR Manager Name" --role=hr`. Add `--employee-id=ID` only when the account belongs to that existing employee record. Have the new user change their temporary password through **Forgot password?** on the sign-in page. The command cannot overwrite an existing user's role.
+
+## Change an account's email or password
+
+To change an existing account's email, keep the same UID and run this trusted local command with your service-account environment variables from step 4:
+
+```powershell
+npm run change:user-email -- --uid=AUTH_UID --email=new@example.com
+```
+
+The command updates Firebase Authentication and the matching Firestore profile; it leaves the role unchanged. The new email is unverified until verified through Firebase. Sign out, then sign in using the new email. To change the password, use **Forgot password?** on the app sign-in page and follow the email link. Enter the account's current sign-in email. Never send a password or service-account key to another person.
+
 ## 7. Test
 
 Use Java 21 (recommended) for the Firestore emulator:
