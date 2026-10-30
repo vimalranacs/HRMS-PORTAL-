@@ -47,7 +47,7 @@ const Auth = {
       window.addEventListener('firebase-ready', startListener, { once: true });
       timeoutId = window.setTimeout(() => {
         if (started) return;
-        Auth.showSetupRequired();
+        Auth.showStartupError();
         resolve(null);
       }, 8000);
     }
@@ -106,9 +106,12 @@ const Auth = {
     element.textContent = message;
   },
 
-  showSetupRequired: () => {
+  showStartupError: () => {
     document.body.classList.add('auth-required');
-    Auth.setMessage('Firebase is not configured yet. Complete public/js/firebase-config.js using DEPLOYMENT_GUIDE.md.', 'warning');
+    const missing = document.documentElement.dataset.firebase === 'unconfigured';
+    Auth.setMessage(missing
+      ? 'This deployment is missing its Firebase project configuration. Contact the site administrator.'
+      : 'The sign-in service did not load. Refresh the page; if this continues, check your browser connection or extensions.', 'warning');
     document.querySelectorAll('#auth-form input, #auth-form button').forEach((element) => { element.disabled = true; });
   }
 };

@@ -19,7 +19,13 @@ if (!configured) {
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  await setPersistence(auth, browserLocalPersistence);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (error) {
+    // Some private browsing modes block local persistence. Firebase can still use
+    // its available session storage and present a working sign-in form.
+    console.warn('Persistent sign-in storage is unavailable:', error.code || error.message);
+  }
 
   if (useFirebaseEmulators) {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
