@@ -1,13 +1,13 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js';
+import { initializeApp } from 'firebase/app';
 import {
   browserLocalPersistence, connectAuthEmulator, getAuth, onAuthStateChanged,
   sendPasswordResetEmail, setPersistence, signInWithEmailAndPassword, signOut
-} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js';
+} from 'firebase/auth';
 import {
   addDoc, collection, connectFirestoreEmulator, deleteDoc, doc, getDoc, getDocs,
   getFirestore, limit, orderBy, query, runTransaction, serverTimestamp, setDoc,
   updateDoc, where, writeBatch
-} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js';
+} from 'firebase/firestore';
 import { firebaseConfig, useFirebaseEmulators } from './firebase-config.js';
 
 const configured = !Object.values(firebaseConfig).some((value) => String(value).startsWith('YOUR_'));

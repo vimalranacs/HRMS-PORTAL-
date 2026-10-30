@@ -11,7 +11,8 @@
     "test:unit": "node --test tests/unit/*.test.js",
     "test:rules": "firebase emulators:exec --project demo-no-project --only firestore \"node --test tests/firestore-rules.test.js\"",
     "check": "npm run test:unit",
-    "deploy": "firebase deploy --only hosting,firestore:rules,firestore:indexes",
+    "build": "esbuild public/js/firebase-bootstrap.js --bundle --format=esm --minify --outfile=public/js/firebase-bundle.js",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore:rules,firestore:indexes",
     "deploy:hosting": "firebase deploy --only hosting",
     "seed": "node scripts/seed-firestore.js",
     "provision:user": "node scripts/provision-user.js"
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",
+    "esbuild": "^0.25.11",
     "firebase-admin": "^13.5.0",
     "firebase-tools": "^14.23.0"
   },
