@@ -1,0 +1,142 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function active() { return signedIn() && profile().status == 'active'; }
+    function roleIs(role) { return active() && profile().role == role; }
+    function privileged() { return roleIs('admin') || roleIs('hr'); }
+    function isAdmin() { return roleIs('admin'); }
+    function ownsEmployee(employeeId) {
+      return active() && profile().employeeId == employeeId;
+    }
+    function validRole(role) { return role in ['admin', 'hr', 'employee']; }
+    function validStatus(status) { return status in ['active', 'inactive']; }
+    function onlyChanged(fields) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields); }
+
+    match /users/{uid} {
+      allow read: if active() && (request.auth.uid == uid || isAdmin());
+      allow create: if isAdmin() && request.auth.uid != uid
+        && request.resource.data.uid == uid
+        && validRole(request.resource.data.role)
+        && validStatus(request.resource.data.status);
+      allow update: if isAdmin() && request.auth.uid != uid
+        && request.resource.data.uid == resource.data.uid
+        && validRole(request.resource.data.role)
+        && validStatus(request.resource.data.status);
+      allow update: if active() && request.auth.uid == uid
+        && onlyChanged(['displayName', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /departments/{departmentId} {
+      allow read: if active();
+      allow create, update: if privileged()
+        && request.resource.data.name is string
+        && request.resource.data.code is string
+        && request.resource.data.budget is number
+        && request.resource.data.budget >= 0;
+      allow delete: if isAdmin();
+    }
+
+    match /employees/{employeeId} {
+      allow read: if privileged() || ownsEmployee(employeeId);
+      allow create: if privileged()
+        && request.resource.data.employeeCode is string
+        && request.resource.data.email is string
+        && request.resource.data.status in ['Active', 'On Leave', 'Inactive', 'Terminated']
+        && request.resource.data.basicSalary is number
+        && request.resource.data.basicSalary >= 0;
+      allow update: if privileged()
+        && request.resource.data.employeeCode == resource.data.employeeCode
+        && request.resource.data.authUid == resource.data.authUid;
+      allow delete: if isAdmin();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if privileged() || ownsEmployee(resource.data.employeeId);
+      allow create: if privileged() || (
+        ownsEmployee(request.resource.data.employeeId)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status in ['Present', 'Late']
+        && request.resource.data.clockInAt == request.time
+        && request.resource.data.clockOutAt == null
+      );
+      allow update: if privileged() || (
+        ownsEmployee(resource.data.employeeId)
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.employeeId == resource.data.employeeId
+        && request.resource.data.date == resource.data.date
+        && request.resource.data.clockInAt == resource.data.clockInAt
+        && request.resource.data.clockOutAt == request.time
+        && onlyChanged(['clockOutAt', 'clock_out', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /leaveRequests/{requestId} {
+      allow read: if privileged() || (active() && resource.data.ownerUid == request.auth.uid);
+      allow create: if active()
+        && request.resource.data.ownerUid == request.auth.uid
+        && ownsEmployee(request.resource.data.employeeId)
+        && request.resource.data.status == 'Pending'
+        && request.resource.data.daysCount is int
+        && request.resource.data.daysCount > 0
+        && request.resource.data.startDate <= request.resource.data.endDate
+        && request.resource.data.reviewerUid == null;
+      allow update: if privileged()
+        && resource.data.status == 'Pending'
+        && request.auth.uid != resource.data.ownerUid
+        && request.resource.data.status in ['Approved', 'Rejected']
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.employeeId == resource.data.employeeId
+        && request.resource.data.daysCount == resource.data.daysCount
+        && request.resource.data.reviewerUid == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /leaveBalances/{employeeId} {
+      allow read: if privileged() || ownsEmployee(employeeId);
+      allow create, update: if privileged()
+        && request.resource.data.employeeId == employeeId
+        && request.resource.data.annual >= 0
+        && request.resource.data.sick >= 0
+        && request.resource.data.casual >= 0;
+      allow delete: if false;
+    }
+
+    match /payrollRecords/{recordId} {
+      allow read: if privileged() || (active() && resource.data.ownerUid == request.auth.uid);
+      allow create, update: if privileged()
+        && request.resource.data.netSalary is number
+        && request.resource.data.netSalary >= 0
+        && request.resource.data.employeeId is string;
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if active() && resource.data.recipientUid == request.auth.uid;
+      allow create: if privileged() && request.resource.data.recipientUid is string;
+      allow update: if active()
+        && resource.data.recipientUid == request.auth.uid
+        && onlyChanged(['read', 'readAt']);
+      allow delete: if active() && resource.data.recipientUid == request.auth.uid;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if active()
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.actorRole == profile().role
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /organizationSettings/{settingId} {
+      allow read: if active();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+  }
+}

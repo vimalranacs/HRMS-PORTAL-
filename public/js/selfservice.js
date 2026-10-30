@@ -95,7 +95,7 @@ const SelfService = {
                 <td class="fw-bold text-success">₹${p.net_salary.toLocaleString('en-IN')}</td>
                 <td><span class="badge ${p.payment_status === 'Paid' ? 'bg-success' : 'bg-warning text-dark'}">${p.payment_status}</span></td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-outline-primary" onclick="Payroll.viewPayslip(${p.id})">
+                  <button class="btn btn-sm btn-outline-primary" onclick='Payroll.viewPayslip(${JSON.stringify(String(p.id))})'>
                     <i class="bi bi-printer me-1"></i>View Payslip
                   </button>
                 </td>

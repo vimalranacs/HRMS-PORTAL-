@@ -1,131 +1,92 @@
-# Comprehensive HR Management System (HRMS)
-**College Project: 3rd Year B.Tech Computer Science & Engineering (CSE)**
+# Apex People — Secure HR Management System
 
-A complete, beginner-friendly, and visually professional corporate **Human Resource Management System (HRMS)** built with pure **HTML, Vanilla JavaScript, Bootstrap 5, Node.js (Express), and SQLite3**.
+Apex People is a professional, cloud-hosted HRMS built as a third-year B.Tech engineering project. It demonstrates genuine authentication, database-enforced role authorization, employee records, attendance, leave workflows, simplified payroll, reports, CSV export, and employee self-service.
 
----
+The application uses HTML, modern CSS, Bootstrap, Chart.js, and modular Vanilla JavaScript. Firebase Authentication, Cloud Firestore, and Firebase Hosting replace the original demo role switcher, Express API, and local SQLite runtime.
 
-## 🌟 Key Highlights
+## Highlights
 
-- **Professional SaaS Interface**: Restrained visual system with responsive navigation, accessible controls, polished tables, forms, feedback, and empty/loading states.
-- **Interactive Visualizations**: Real-time charts powered by Chart.js (headcount distribution, daily attendance, departmental spending, payroll trends).
-- **Role-Based Demo Authentication**: Easily switch between **System Admin** (Full Access), **HR Manager** (Operations), and **Employee Self-Service** with one click.
-- **Complete HR Lifecycle**:
-  - Employee Master Management (Full CRUD, profile inspector, search & filters)
-  - Daily Attendance Tracking (duplicate-prevention, quick mark actions, live totals)
-  - Leave Application & Approval Workflow (Sick, Casual, Annual leave balances)
-  - Automated Payroll Engine (auto HRA/DA calculation, PF 12%, TDS 8%, printable official payslips)
-  - Department Division Management (leadership, staff count, budgets)
-  - Institutional Reports & 1-Click CSV Export
-  - Employee Self-Service Workspace (personal clock-in, leave quotas, personal payslips)
-- **Zero Heavy Frameworks**: No React, MongoDB, Docker, or TypeScript required. Easy to explain line-by-line during college viva.
-- **Offline-Friendly Demo**: Bootstrap, Bootstrap Icons, and Chart.js are installed locally through npm; the application does not require cloud services or API keys.
+- Firebase email/password login, password reset, persistent sessions, and logout.
+- Three protected roles: `admin`, `hr`, and `employee`.
+- Firestore rules prevent self-promotion and cross-employee payroll access.
+- Admin/HR employee, department, attendance, leave, payroll, report, and CSV workflows.
+- Employee-only profile, attendance, leave, and payslip workspace.
+- Server timestamps for attendance and audit events.
+- Explicit, idempotent fictional-data seeding.
+- Trusted local account provisioning; no service credentials in browser code.
+- Firebase Hosting deployment on the Spark plan.
 
----
+## Architecture
 
-## 🛠️ Technology Stack
+```text
+Browser (HTML/CSS/Vanilla JS)
+  ├── Firebase Authentication → verified identity
+  ├── Cloud Firestore → persistent organization data
+  └── Firestore Security Rules → role and ownership enforcement
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| **Frontend UI** | HTML5, CSS3, Vanilla JavaScript | Responsive Single Page Application (SPA) architecture |
-| **Styling** | Bootstrap 5.3 + Bootstrap Icons | Modern corporate design system & responsive layout |
-| **Data Visuals** | Chart.js 4.4 | Interactive donut, bar, and trend charts |
-| **Backend Server** | Node.js with Express.js | Clean REST API endpoints and static asset serving |
-| **Database** | SQLite3 (`hrms.db`) | Local persistent relational database with automatic seed data |
-
----
-
-## 🚀 Quick Start Guide
-
-### Prerequisites
-- Node.js (v18, v20, v22, or v24 installed)
-- Web browser (Chrome, Edge, Firefox, or Safari)
-
-### 1. Install Dependencies
-Open your terminal in the project root directory and run:
-```bash
-npm install
+Firebase Hosting → static production delivery
+Trusted local Admin SDK scripts → one-time seed and provisioning
 ```
 
-### 2. Launch the Application
-Start the server using:
-```bash
+See [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), and [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md).
+
+## Quick start
+
+Prerequisites: Node.js 20+, Java 21 for the Firestore emulator, a Firebase project, and Firebase CLI login.
+
+```powershell
+npm install
+Copy-Item .firebaserc.example .firebaserc
+# Replace YOUR_FIREBASE_PROJECT_ID in .firebaserc
+# Replace placeholders in public/js/firebase-config.js
 npm start
 ```
-*(Alternative for development with auto-reload: `npm run dev`)*
 
-### 3. Run the Verification Suite
+Open `http://127.0.0.1:5000`. This serves the app locally and uses your configured Firebase project. Use `npm run dev` and open `http://127.0.0.1:5000/?emulators=1` when using the full local emulator suite.
 
-The tests use a disposable temporary SQLite database and do not modify `database/hrms.db`:
+## Tests
 
-```bash
+```powershell
 npm test
+npm run test:rules
 ```
 
-### 4. Open in Browser
-Navigate to:
-```
-http://localhost:3000
-```
-The database will automatically seed **20 realistic employees, 5 departments, attendance history, leave requests, and payroll records** on the very first run!
+The unit suite verifies business calculations. The rules suite verifies anonymous rejection, cross-employee payroll isolation, role-escalation prevention, inactive accounts, and administrator access.
 
----
+## Deployment
 
-## 📁 Project Directory Structure
+Follow [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md). The short version is:
 
-```
-hcl project/
-├── database/
-│   ├── db.js                 # SQLite connection, schema definition & sample data seeder
-│   └── hrms.db               # SQLite database file (created automatically)
-├── public/
-│   ├── css/
-│   │   └── style.css         # Custom corporate styles & printable payslip print rules
-│   ├── js/
-│   │   ├── api.js            # Frontend REST API client
-│   │   ├── app.js            # App coordinator, role switcher & toast notifications
-│   │   ├── dashboard.js      # Executive dashboard metrics & Chart.js charts
-│   │   ├── employees.js      # Employee CRUD, profile modal, search & filters
-│   │   ├── departments.js    # Department management & budget tracking
-│   │   ├── attendance.js     # Daily roll call, quick mark & duplicate prevention
-│   │   ├── leaves.js         # Leave requests, review approval/rejection
-│   │   ├── payroll.js        # Salary calculations, batch generator & payslip modal
-│   │   ├── reports.js        # Tabulated reports & 1-click CSV download
-│   │   └── selfservice.js    # Dedicated employee personal portal
-│   └── index.html            # Main Single Page Application interface
-├── routes/
-│   ├── auth.js               # Demo role switcher endpoints
-│   ├── dashboard.js          # Statistics and analytics endpoints
-│   ├── employees.js          # Employee CRUD endpoints
-│   ├── departments.js        # Department CRUD endpoints
-│   ├── attendance.js         # Daily attendance endpoints
-│   ├── leaves.js             # Leave workflow endpoints
-│   ├── payroll.js            # Payroll calculations & payslip endpoints
-│   └── reports.js            # CSV export & reporting endpoints
-├── tests/
-│   └── integration.test.js   # End-to-end REST workflow tests using a temporary database
-├── utils/
-│   └── validation.js         # Shared date, number, ID, and text validation helpers
-├── package.json              # Project metadata & npm scripts
-├── README.md                 # Project overview and run instructions
-├── PROJECT_EXPLANATION.md    # Beginner-friendly system walkthrough
-├── DATABASE_SCHEMA.md        # Relational database tables and ER explanation
-└── PRESENTATION_GUIDE.md     # 5-10 min demo script & 15 viva Q&As
+```powershell
+firebase login
+firebase use YOUR_FIREBASE_PROJECT_ID
+npm run deploy
 ```
 
----
+## Account provisioning
 
-## 🎭 Role-Based Demo Modes
+Create Authentication identities in Firebase Console, then create protected profiles with the trusted local script:
 
-Click **"Switch Demo Role"** in the top bar or sidebar anytime during a presentation:
-1. **System Admin**: Complete control over all master data, employee CRUD, salary configurations, and audit logs.
-2. **HR Manager (Anita Verma)**: Manage employees, review and approve/reject leave requests, mark attendance, and generate payroll batches.
-3. **Employee Self-Service (e.g. Aarav Patel / Priya Nair)**: Restricted personal workspace where employees can clock in, check remaining leave quotas, apply for leaves, and print official payslips.
+```powershell
+$env:FIREBASE_PROJECT_ID = "your-project-id"
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\secure\firebase-admin.json"
+npm run provision:user -- --uid=AUTH_UID --email=admin@example.com --name="System Admin" --role=admin
+```
 
----
+Employee accounts additionally require `--employee-id=1`. Never commit the downloaded service-account file.
 
-## 📄 Documentation Files
+## Important limitations
 
-- [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md) — Line-by-line explanation of how the system works.
-- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) — Comprehensive schema definitions, constraints, and relationships.
-- [PRESENTATION_GUIDE.md](PRESENTATION_GUIDE.md) — Script for a 5–10 minute demonstration and viva questions.
+- Payroll calculations are educational and are not verified Indian statutory payroll compliance.
+- Spark-only client execution cannot provide tamper-proof privileged payroll generation or audit logs. Rules restrict writers, but trusted backend execution is needed for stronger guarantees.
+- Auth accounts are administrator-assisted because securely creating other users requires trusted privileges.
+- Firebase web configuration identifies the project and is not a service-account secret. Security depends on Authentication and Firestore Rules.
+
+## Screenshots and live site
+
+- Login: _add screenshot after Firebase configuration_
+- Admin dashboard: _add screenshot_
+- Employee portal: _add screenshot_
+- Live URL: _add Firebase Hosting URL after deployment_
+
+MIT licensed. All seed records are fictional.

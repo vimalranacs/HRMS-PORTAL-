@@ -178,7 +178,7 @@ const Dashboard = {
       if (!container) return;
 
       if (res.activities.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div><i class="bi bi-activity"></i><strong>No recent activity</strong><span>Actions taken in the demo will appear here.</span></div></div>';
+        container.innerHTML = '<div class="empty-state"><div><i class="bi bi-activity"></i><strong>No recent activity</strong><span>Authorized system actions will appear here.</span></div></div>';
         return;
       }
 

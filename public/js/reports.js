@@ -141,7 +141,17 @@ const Reports = {
     }
   },
 
-  exportCurrentCSV: () => {
-    window.location.href = `/api/reports/${Reports.currentTab}?exportCSV=true`;
+  exportCurrentCSV: async () => {
+    const loaders = { employees: API.getEmployeeReport, attendance: API.getAttendanceReport, leaves: API.getLeaveReport, payroll: API.getPayrollReport };
+    try {
+      const result = await loaders[Reports.currentTab]();
+      const rows = result.records || [];
+      if (!rows.length) return App.showToast('There is no data to export.', 'warning');
+      const keys = Object.keys(rows[0]).filter((key) => !['authUid', 'ownerUid'].includes(key));
+      const quote = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+      const csv = [keys.map(quote).join(','), ...rows.map((row) => keys.map((key) => quote(row[key])).join(','))].join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const link = document.createElement('a'); link.href = url; link.download = `${Reports.currentTab}-report.csv`; link.click(); URL.revokeObjectURL(url);
+    } catch (error) { App.showToast(error.message || 'The report could not be exported.', 'danger'); }
   }
 };

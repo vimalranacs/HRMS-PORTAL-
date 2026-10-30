@@ -43,7 +43,7 @@ const Leaves = {
         else if (l.status === 'Rejected') badge = '<span class="badge badge-status badge-rejected"><i class="bi bi-x-circle me-1"></i>Rejected</span>';
 
         // Action buttons (only show Approve/Reject if user is Admin or HR Manager and status is Pending)
-        const canManage = (App.currentRole === 'admin' || App.currentRole === 'hr_manager') && l.status === 'Pending';
+        const canManage = (App.currentRole === 'admin' || App.currentRole === 'hr') && l.status === 'Pending';
         const actionsHtml = canManage
           ? `
             <button class="btn btn-sm btn-success me-1" title="Approve" onclick="Leaves.reviewLeave(${l.id}, 'Approved', ${App.escapeHtml(JSON.stringify(`${l.first_name} ${l.last_name}`))})">
@@ -91,7 +91,12 @@ const Leaves = {
 
     // If logged in as Employee, auto select current employee
     if (App.currentRole === 'employee' && App.currentEmployeeId) {
-      document.getElementById('leave-form-emp').value = App.currentEmployeeId;
+      const select = document.getElementById('leave-form-emp');
+      select.innerHTML = `<option value="${App.escapeHtml(App.currentEmployeeId)}">${App.escapeHtml(Auth.profile?.displayName || 'My employee profile')}</option>`;
+      select.value = App.currentEmployeeId;
+      select.disabled = true;
+    } else {
+      document.getElementById('leave-form-emp').disabled = false;
     }
 
     const modalEl = document.getElementById('modal-apply-leave');
@@ -121,7 +126,7 @@ const Leaves = {
         const modalEl = document.getElementById('modal-apply-leave');
         bootstrap.Modal.getInstance(modalEl).hide();
         await Leaves.loadLeaves();
-        Dashboard.loadStats();
+        if (App.currentRole !== 'employee') Dashboard.loadStats();
         // If in self service, reload self service leaves
         if (typeof SelfService !== 'undefined') SelfService.loadData();
       } else {

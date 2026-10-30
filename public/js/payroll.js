@@ -67,10 +67,10 @@ const Payroll = {
             <td><span class="fw-bold text-success">₹${p.net_salary.toLocaleString('en-IN')}</span></td>
             <td>${statusBadge}</td>
             <td class="text-end">
-              <button class="btn btn-sm btn-primary me-1" title="Generate / View Payslip" onclick="Payroll.viewPayslip(${p.id})">
+              <button class="btn btn-sm btn-primary me-1" title="Generate / View Payslip" onclick='Payroll.viewPayslip(${JSON.stringify(String(p.id))})'>
                 <i class="bi bi-file-earmark-text me-1"></i>Payslip
               </button>
-              <button class="btn btn-sm btn-outline-secondary" title="Toggle Status" onclick="Payroll.toggleStatus(${p.id}, '${isPaid ? 'Pending' : 'Paid'}')">
+              <button class="btn btn-sm btn-outline-secondary" title="Toggle Status" onclick='Payroll.toggleStatus(${JSON.stringify(String(p.id))}, ${JSON.stringify(isPaid ? 'Pending' : 'Paid')})'>
                 <i class="bi bi-arrow-repeat"></i>
               </button>
             </td>

@@ -1,10 +1,9 @@
 // Main Application Controller
 const App = {
-  currentRole: 'admin', // 'admin' | 'hr_manager' | 'employee'
-  currentRoleName: 'Admin',
-  currentEmployeeId: 1, // Default employee for employee self-service view
+  currentRole: null,
+  currentRoleName: '',
+  currentEmployeeId: null,
   currentView: 'dashboard',
-  demoEmployees: [],
 
   escapeHtml: (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -44,9 +43,6 @@ const App = {
     // Setup live clock
     App.startClock();
 
-    // Load demo users
-    await App.loadDemoUsers();
-
     // Event listeners for forms
     document.getElementById('form-employee')?.addEventListener('submit', Employees.saveEmployee);
     document.getElementById('form-department')?.addEventListener('submit', Departments.saveDepartment);
@@ -54,9 +50,16 @@ const App = {
     document.getElementById('form-apply-leave')?.addEventListener('submit', Leaves.submitLeaveApplication);
     document.getElementById('form-generate-payroll')?.addEventListener('submit', Payroll.submitGeneratePayroll);
 
-    // Initial navigation
+    await Auth.init();
+  },
+
+  startAuthenticated: async (profile) => {
+    App.currentRole = profile.role;
+    App.currentRoleName = Business.roleLabel(profile.role);
+    App.currentEmployeeId = profile.employeeId ? parseInt(profile.employeeId, 10) || profile.employeeId : null;
     App.applyRolePermissions();
-    App.navigateTo('dashboard');
+    await Notifications.init();
+    await App.navigateTo(profile.role === 'employee' ? 'selfservice' : 'dashboard');
   },
 
   startClock: () => {
@@ -72,71 +75,6 @@ const App = {
     setInterval(updateTime, 1000);
   },
 
-  loadDemoUsers: async () => {
-    try {
-      const res = await API.getDemoUsers();
-      if (res.success) {
-        App.demoEmployees = res.employees;
-
-        // Populate employee dropdown in demo switcher
-        const sel = document.getElementById('demo-select-employee');
-        if (sel) {
-          sel.innerHTML = res.employees.map(e => `
-            <option value="${e.id}">${e.employee_code} - ${e.first_name} ${e.last_name} (${e.designation})</option>
-          `).join('');
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load demo users:', err);
-      App.showToast(err.message || 'Demo profiles could not be loaded.', 'danger');
-    }
-  },
-
-  openRoleSwitcher: () => {
-    const modalEl = document.getElementById('modal-role-switcher');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-  },
-
-  selectRoleOption: (role) => {
-    const empSelectDiv = document.getElementById('demo-employee-picker-container');
-    if (role === 'employee') {
-      empSelectDiv?.classList.remove('d-none');
-    } else {
-      empSelectDiv?.classList.add('d-none');
-    }
-  },
-
-  applySelectedRole: () => {
-    const selectedRadio = document.querySelector('input[name="demoRole"]:checked');
-    if (!selectedRadio) return;
-
-    App.currentRole = selectedRadio.value;
-    if (App.currentRole === 'admin') {
-      App.currentRoleName = 'Admin';
-    } else if (App.currentRole === 'hr_manager') {
-      App.currentRoleName = 'HR Manager';
-    } else {
-      App.currentRoleName = 'Employee';
-      const selEmp = document.getElementById('demo-select-employee');
-      if (selEmp) App.currentEmployeeId = parseInt(selEmp.value, 10) || 1;
-    }
-
-    App.applyRolePermissions();
-
-    const modalEl = document.getElementById('modal-role-switcher');
-    bootstrap.Modal.getInstance(modalEl).hide();
-
-    // Redirect view depending on role
-    if (App.currentRole === 'employee') {
-      App.navigateTo('selfservice');
-      App.showToast(`Switched to Employee Self-Service mode!`, 'info');
-    } else {
-      App.navigateTo('dashboard');
-      App.showToast(`Switched to ${App.currentRoleName} view!`, 'info');
-    }
-  },
-
   applyRolePermissions: () => {
     const roleBadge = document.getElementById('current-role-badge');
     const userNameEl = document.getElementById('current-user-name');
@@ -146,14 +84,13 @@ const App = {
       if (App.currentRole === 'admin') {
         roleBadge.classList.add('role-admin');
         roleBadge.innerHTML = '<i class="bi bi-shield-lock-fill"></i> System Admin (Full Access)';
-        if (userNameEl) userNameEl.innerText = 'Admin User';
-      } else if (App.currentRole === 'hr_manager') {
+        if (userNameEl) userNameEl.innerText = Auth.profile?.displayName || 'System Administrator';
+      } else if (App.currentRole === 'hr') {
         roleBadge.classList.add('role-hr');
-        roleBadge.innerHTML = '<i class="bi bi-person-badge-fill"></i> HR Manager (Anita Verma)';
-        if (userNameEl) userNameEl.innerText = 'Anita Verma (HR Director)';
+        roleBadge.innerHTML = '<i class="bi bi-person-badge-fill"></i> HR Manager';
+        if (userNameEl) userNameEl.innerText = Auth.profile?.displayName || 'HR Manager';
       } else {
-        const emp = App.demoEmployees.find(e => e.id === App.currentEmployeeId);
-        const name = emp ? `${emp.first_name} ${emp.last_name}` : 'Employee User';
+        const name = Auth.profile?.displayName || 'Employee';
         roleBadge.classList.add('role-employee');
         roleBadge.innerHTML = `<i class="bi bi-person-fill"></i> Employee: ${name}`;
         if (userNameEl) userNameEl.innerText = name;
@@ -169,11 +106,18 @@ const App = {
       employeeLinks.forEach(el => el.classList.remove('d-none'));
     } else {
       adminHrLinks.forEach(el => el.classList.remove('d-none'));
-      employeeLinks.forEach(el => el.classList.remove('d-none')); // Admins can also inspect self-service
+      employeeLinks.forEach(el => el.classList.add('d-none'));
     }
+
+    document.querySelectorAll('[data-admin-only]').forEach((element) => element.classList.toggle('d-none', App.currentRole !== 'admin'));
   },
 
   navigateTo: async (viewName) => {
+    if (!Auth.profile) return;
+    if (Auth.profile.role === 'employee' && viewName !== 'selfservice') {
+      App.showToast('Your account can only access the employee portal.', 'warning');
+      viewName = 'selfservice';
+    }
     const targetPanel = document.getElementById(`view-${viewName}`);
     if (!targetPanel) {
       App.showToast('That workspace is not available.', 'warning');
